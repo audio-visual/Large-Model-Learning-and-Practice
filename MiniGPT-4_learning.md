@@ -2,6 +2,8 @@
 
 为了简单起见，以minigpt4(llama)版本为例
 
+前置实验，LLama的使用：https://github.com/audio-visual/Large-Model-Learning-and-Practice/blob/main/LLama_simple_usage.md
+
 # 环境搭建（推理）
 可参考原始工程
 我做的改动是
