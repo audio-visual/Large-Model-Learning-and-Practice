@@ -102,7 +102,7 @@ def gradio_ask(user_message, chatbot, chat_state):
     if len(user_message) == 0:
         return gr.update(interactive=True, placeholder='Input should not be empty!'), chatbot, chat_state
     chat.ask(user_message, chat_state) # chat_state在该函数内进行更新
-    chatbot = chatbot + [[user_message, None]] # TODO 这是干嘛？
+    chatbot = chatbot + [[user_message, None]] # 更新gradio对话框中的内容
     return '', chatbot, chat_state
 ```
 
@@ -110,11 +110,15 @@ def gradio_ask(user_message, chatbot, chat_state):
 # conversation.py
 class Chat:
     def ask(self, text, conv):
+        ```
+         [['<s>[INST] ', '<Img><ImageHere></Img> describe this image'], [' [/INST] ', 'The image is of a man standing in a field with a camera slung over his shoulder. He is wearing a brown t-shirt and black pants, and his hair is cut short. In the background, there are trees and hills, and the sky is clear with no clouds.'], ['<s>[INST] ', "what's the color of the background?"]]
+        ```
+        # 若是上传了新的图片，还没开始第一次对话时，则走该分支
         if len(conv.messages) > 0 and conv.messages[-1][0] == conv.roles[0] \
                 and conv.messages[-1][1][-6:] == '</Img>': 
-            # [['<s>[INST] ', '<Img><ImageHere></Img> what the color of the t-shirt in the picture?']]
+            # ['<s>[INST] ', '<Img><ImageHere></Img> describe this image']
             conv.messages[-1][1] = ' '.join([conv.messages[-1][1], text])
-        else:
+        else:#否则，就是如下分支 # [INST] ', "what's the color of the background?"]
             conv.append_message(conv.roles[0], text)
 ```
 
@@ -146,13 +150,13 @@ class Chat:
         output_text = output_text.split('###')[0]  # remove the stop sign '###'
         output_text = output_text.split('Assistant:')[-1].strip()
 
-        conv.messages[-1][1] = output_text
+        conv.messages[-1][1] = output_text # [' [/INST] ', 'The image is of a man standing in a field with a camera slung over his shoulder. He is wearing a brown t-shirt and black pants, and his hair is cut short. In the background, there are trees and hills, and the sky is clear with no clouds.']
         return output_text, output_token.cpu().numpy()
 
     def answer_prepare(self, conv, img_list, max_new_tokens=300, num_beams=1, min_length=1, top_p=0.9,
                        repetition_penalty=1.05, length_penalty=1, temperature=1.0, max_length=2000):
         conv.append_message(conv.roles[1], None)# 消息结束
-        # Give the following image: <Img>ImageContent</Img>. You will be able to see the image once I provide it to you. Please answer my questions.<s>[INST] <Img><ImageHere></Img> what the color of the t-shirt in the picture? [/INST]
+        # Give the following image: <Img>ImageContent</Img>. You will be able to see the image once I provide it to you. Please answer my questions.<s>[INST] <Img><ImageHere></Img> describe this image? [/INST]
         prompt = conv.get_prompt() #Conversation的结构化处理，系统命令+sep+用户消息
         # 根据prompt和已经编码后的图像，得到经过多模态模型编码的embedding
         embs = self.model.get_context_emb(prompt, img_list)
